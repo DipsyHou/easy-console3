@@ -1,6 +1,6 @@
 #include "viewpoint.hpp"
 #include "wall.hpp"
-
+#include "utils.cpp"
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -8,31 +8,26 @@
 class Space
 {
 public:
-    Space() {}
+    Space() : viewpoint(nullptr) {}
+    Space(Viewpoint* vp) : viewpoint(vp) {}
     ~Space() {}
 
     struct RayResult {
-        double distance;    // 距离视点的距离
-        bool hit;           // 是否击中物体
-        const Wall* hitWall; // 击中的墙体指针
+        double distance;
+        bool hit;
+        const Wall* hitWall;
         RayResult() : distance(1e9), hit(false), hitWall(nullptr) {}
     };
     
+    Viewpoint* getViewpoint() const { return viewpoint; }
 
-    void printChar(char c, int posX, int posY)
-    {
-        // 移动光标到指定位置并打印字符
-        std::cout << "\033[" << posY << ";" << posX << "H" << c << std::flush;
-    }
-
-    // 计算指定角度的射线与所有墙体的相交
-    // rayAngle: 射线的绝对角度（度）
+    // calculate intersection of a ray with all walls
     RayResult castRay(double rayAngle) 
     {
         RayResult result;
         
-        double rayOriginX = viewpoint.getPosX();
-        double rayOriginY = viewpoint.getPosY();
+        double rayOriginX = viewpoint->getPosX();
+        double rayOriginY = viewpoint->getPosY();
         
         double angleRad = rayAngle * M_PI / 180.0;
         
@@ -70,7 +65,7 @@ public:
                     closestDistance = distance;
                     result.hit = true;
                     result.distance = distance;
-                    result.hitWall = &wall;  // 记录击中的墙体
+                    result.hitWall = &wall;
                 }
             }
         }
@@ -80,60 +75,51 @@ public:
 
     void render()
     {
-        int lineCount = viewpoint.getViewLineCount();
-        double halfFov = viewpoint.getViewAngle() / 2.0;
+        int lineCount = viewpoint->getViewLineCount();
+        double halfFov = viewpoint->getViewAngle() / 2.0;
         
         for (int i = 0; i < lineCount; ++i) {
-            double rayAngle = -halfFov + (viewpoint.getViewAngle() * i) / (lineCount - 1);
+            double rayAngle = -halfFov + (viewpoint->getViewAngle() * i) / (lineCount - 1);
             RayResult rayResult = castRay(rayAngle);
             
-            const int screenHeight = 24;  // 屏幕高度
+            const int screenHeight = 60;
             
-            // 计算墙体在屏幕上的投影高度
-            double viewHeight = rayResult.hit ? atan(5.0 / rayResult.distance) / 1.57 * screenHeight : 0.0;
+            double correctedDistance = rayResult.distance * std::cos(rayAngle * M_PI / 180.0);
+            double viewHeight = rayResult.hit ? atan(5.0 / correctedDistance) / 1.57 * screenHeight : 0.0;
             
-            // 判断墙体方向（水平或垂直）
+            // todo: brightness according to wall direction
             char wallChar = ' ';
             if (rayResult.hit && rayResult.hitWall != nullptr) {
                 double dx = rayResult.hitWall->getX2() - rayResult.hitWall->getX1();
                 double dy = rayResult.hitWall->getY2() - rayResult.hitWall->getY1();
                 
-                // 判断墙体是水平还是垂直
                 if (std::abs(dx) > std::abs(dy)) {
-                    wallChar = '@';  // 水平墙
+                    wallChar = '@';
                 } else {
-                    wallChar = '+';  // 垂直墙
+                    wallChar = '+';
                 }
             }
             
-            // 计算墙体的垂直居中位置
             int wallHeight = static_cast<int>(viewHeight);
-            int wallTop = (screenHeight - wallHeight) / 2;  // 墙体顶部位置（居中）
-            int wallBottom = wallTop + wallHeight;          // 墙体底部位置
+            int wallTop = (screenHeight - wallHeight) / 2;
+            int wallBottom = wallTop + wallHeight;
 
             for(int y = 0; y < screenHeight; ++y) {
                 char displayChar;
                 
                 if (y >= wallTop && y < wallBottom && rayResult.hit) {
-                    // 墙体区域
+                    // wall
                     displayChar = wallChar;
                 } else if (y >= screenHeight / 2) {
-                    // 下半部分 - 地面
+                    // ground
                     displayChar = '.';
                 } else {
-                    // 上半部分 - 天空
+                    // ceiling
                     displayChar = ' ';
                 }
                 
                 printChar(displayChar, lineCount - i, y + 1);
             }
-            // if (rayResult.hit) {
-            //     std::cout << "Ray " << i << " Angle: " << rayAngle 
-            //               << "° Hit at distance: " << rayResult.distance << std::endl;
-            // } else {
-            //     std::cout << "Ray " << i << " Angle: " << rayAngle 
-            //               << "° No hit" << std::endl;
-            // }
         }
     }
 
@@ -142,7 +128,7 @@ public:
     }
 
 private:
-    Viewpoint viewpoint{180, 91};
+    Viewpoint* viewpoint;
     std::vector<Wall> walls;
 
 };
