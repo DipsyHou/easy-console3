@@ -79,12 +79,17 @@ public:
         double halfFov = viewpoint->getViewAngle() / 2.0;
         
         for (int i = 0; i < lineCount; ++i) {
-            double rayAngle = -halfFov + (viewpoint->getViewAngle() * i) / (lineCount - 1);
-            RayResult rayResult = castRay(rayAngle);
+            
+            // angle relative to the center of view
+            double relativeAngle = -halfFov + (viewpoint->getViewAngle() * i) / (lineCount - 1);
+            // absolute angle in the world
+            double absoluteAngle = viewpoint->getTowards() + relativeAngle;
+            
+            RayResult rayResult = castRay(absoluteAngle);
             
             const int screenHeight = 60;
             
-            double correctedDistance = rayResult.distance * std::cos(rayAngle * M_PI / 180.0);
+            double correctedDistance = rayResult.distance * std::cos(relativeAngle * M_PI / 180.0);
             double viewHeight = rayResult.hit ? atan(5.0 / correctedDistance) / 1.57 * screenHeight : 0.0;
             
             // todo: brightness according to wall direction
