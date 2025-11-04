@@ -75,57 +75,69 @@ public:
 
     void render()
     {
-        int lineCount = viewpoint->getViewLineCount();
-        double halfFov = viewpoint->getViewAngle() / 2.0;
+        const int lineCount = viewpoint->getViewLineCount();
+        const double halfFov = viewpoint->getViewAngle() / 2.0;
+        const int screenHeight = 60;
+        const int screenHalfHeight = screenHeight / 2;
+        
+        // screen buffer
+        static std::vector<std::string> screenBuffer(screenHeight);
+        for (auto& line : screenBuffer) {
+            line.assign(lineCount, ' ');
+        }
+        
+        const double angleStep = viewpoint->getViewAngle() / (lineCount - 1);
+        const double towardsAngle = viewpoint->getTowards();
+        const double degToRad = M_PI / 180.0;
         
         for (int i = 0; i < lineCount; ++i) {
-            
             // angle relative to the center of view
-            double relativeAngle = -halfFov + (viewpoint->getViewAngle() * i) / (lineCount - 1);
+            double relativeAngle = -halfFov + angleStep * i;
             // absolute angle in the world
-            double absoluteAngle = viewpoint->getTowards() + relativeAngle;
+            double absoluteAngle = towardsAngle + relativeAngle;
             
             RayResult rayResult = castRay(absoluteAngle);
             
-            const int screenHeight = 60;
-            
-            double correctedDistance = rayResult.distance * std::cos(relativeAngle * M_PI / 180.0);
-            double viewHeight = rayResult.hit ? atan(5.0 / correctedDistance) / 1.57 * screenHeight : 0.0;
-            
-            // todo: brightness according to wall direction
-            char wallChar = ' ';
-            if (rayResult.hit && rayResult.hitWall != nullptr) {
-                double dx = rayResult.hitWall->getX2() - rayResult.hitWall->getX1();
-                double dy = rayResult.hitWall->getY2() - rayResult.hitWall->getY1();
-                
-                if (std::abs(dx) > std::abs(dy)) {
-                    wallChar = '@';
-                } else {
-                    wallChar = '+';
+            if (!rayResult.hit) {
+                int col = lineCount - i - 1;
+                for(int y = 0; y < screenHalfHeight; ++y) {
+                    screenBuffer[y][col] = ' ';  // ceiling
                 }
+                for(int y = screenHalfHeight; y < screenHeight; ++y) {
+                    screenBuffer[y][col] = '.';  // ground
+                }
+                continue;
             }
+            
+            double correctedDistance = rayResult.distance * std::cos(relativeAngle * degToRad);
+            double viewHeight = atan(5.0 / correctedDistance) / 1.57 * screenHeight;
+            
+            // TODO: more brightness effects
+            double dx = rayResult.hitWall->getX2() - rayResult.hitWall->getX1();
+            double dy = rayResult.hitWall->getY2() - rayResult.hitWall->getY1();
+            char wallChar = (std::abs(dx) > std::abs(dy)) ? '@' : '+';
             
             int wallHeight = static_cast<int>(viewHeight);
             int wallTop = (screenHeight - wallHeight) / 2;
             int wallBottom = wallTop + wallHeight;
-
+            
+            int col = lineCount - i - 1;
             for(int y = 0; y < screenHeight; ++y) {
-                char displayChar;
-                
-                if (y >= wallTop && y < wallBottom && rayResult.hit) {
-                    // wall
-                    displayChar = wallChar;
-                } else if (y >= screenHeight / 2) {
-                    // ground
-                    displayChar = '.';
+                if (y >= wallTop && y < wallBottom) {
+                    screenBuffer[y][col] = wallChar;
+                } else if (y >= screenHalfHeight) {
+                    screenBuffer[y][col] = '.';
                 } else {
-                    // ceiling
-                    displayChar = ' ';
+                    screenBuffer[y][col] = ' ';
                 }
-                
-                printChar(displayChar, lineCount - i, y + 1);
             }
         }
+        
+        std::cout << "\033[H";
+        for (const auto& line : screenBuffer) {
+            std::cout << line << '\n';
+        }
+        std::cout << std::flush;
     }
 
     void addWall(const Wall& wall) {
