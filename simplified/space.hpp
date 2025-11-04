@@ -4,6 +4,8 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <string>
+#include <algorithm>
 
 class Space
 {
@@ -111,12 +113,16 @@ public:
             }
             
             double correctedDistance = rayResult.distance * std::cos(relativeAngle * degToRad);
-            double viewHeight = atan(5.0 / correctedDistance) / 1.57 * screenHeight;
+            double viewHeight = atan(5.0 / correctedDistance) / viewpoint->getViewAngle() / degToRad * screenHeight;
             
-            // TODO: more brightness effects
             double dx = rayResult.hitWall->getX2() - rayResult.hitWall->getX1();
             double dy = rayResult.hitWall->getY2() - rayResult.hitWall->getY1();
-            char wallChar = (std::abs(dx) > std::abs(dy)) ? '@' : '+';
+            double wallAngle = std::atan2(dy, dx); // -pi..pi
+            double brightness = std::abs(std::cos(wallAngle)); // 0..1
+
+            const std::string shades = ":-=+*#%@";
+            int shadeIdx = std::min<int>(static_cast<int>(brightness * (shades.size() - 1) + 0.5), (int)shades.size() - 1);
+            char wallChar = shades[shadeIdx];
             
             int wallHeight = static_cast<int>(viewHeight);
             int wallTop = (screenHeight - wallHeight) / 2;
