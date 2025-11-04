@@ -22,7 +22,7 @@ public:
     Viewpoint* getViewpoint() const { return viewpoint; }
 
     // calculate intersection of a ray with all walls
-    RayResult castRay(double rayAngle) 
+    RayResult castRay(double rayAngle) const
     {
         RayResult result;
         
@@ -48,6 +48,7 @@ public:
             
             double denominator = rayDirX * wallDirY - rayDirY * wallDirX;
             
+            // parallel check
             if (std::abs(denominator) < 1e-10) {
                 continue;
             }
@@ -73,11 +74,11 @@ public:
         return result;
     }
 
-    void render()
+    void render() const
     {
         const int lineCount = viewpoint->getViewLineCount();
         const double halfFov = viewpoint->getViewAngle() / 2.0;
-        const int screenHeight = 60;
+        const int screenHeight = viewpoint->getScreenHeight();
         const int screenHalfHeight = screenHeight / 2;
         
         // screen buffer
