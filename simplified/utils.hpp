@@ -19,9 +19,7 @@ inline void printChar(char c, int posX, int posY)
 }
 
 // Get character without waiting for Enter (cross-platform)
-#ifdef _WIN32
-    inline char getch() { return _getch(); }
-#else
+#ifndef _WIN32
     inline char getch() {
         char buf = 0;
         struct termios old = {0};
@@ -74,10 +72,11 @@ inline void runInteractionLoop(Space& space, double stepLength = 0.1, double rot
 {
     const double deg2rad = M_PI / 180.0;
     Viewpoint* viewpoint = space.getViewpoint();
-    char command;
     
+    space.render();
     std::cout << "Use WASD to move, QE to rotate. Press ESC to quit." << std::endl;
-    
+
+    char command;
     while(true)
     {
         #ifdef _WIN32

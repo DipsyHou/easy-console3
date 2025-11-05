@@ -8,11 +8,11 @@ SRC2 = interact.cpp
 
 all: $(TARGET) $(TARGET2)
 
-$(TARGET): $(SRC) space.hpp viewpoint.hpp wall.hpp
-	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET)
+$(TARGET): $(SRC)
+	$(CXX) -o $(TARGET) $(SRC)
 
-$(TARGET2): $(SRC2) space.hpp viewpoint.hpp wall.hpp utils.hpp
-	$(CXX) -o $(TARGET2) $(SRC2) -static
+$(TARGET2): $(SRC2)
+	$(CXX) -o $(TARGET2) $(SRC2)
 
 clean:
 	rm -f $(TARGET) $(TARGET2)

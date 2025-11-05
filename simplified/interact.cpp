@@ -4,6 +4,8 @@
 #include <thread>
 #include <iostream>
 
+
+
 int main()
 {
     Viewpoint viewpoint(60, 300, 100, 0.0, 0.0, 0.0);
