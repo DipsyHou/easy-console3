@@ -1,6 +1,8 @@
+#ifndef SPACE_HPP
+#define SPACE_HPP
+
 #include "viewpoint.hpp"
 #include "wall.hpp"
-#include "utils.cpp"
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -156,3 +158,5 @@ private:
     std::vector<Wall> walls;
 
 };
+
+#endif

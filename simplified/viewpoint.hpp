@@ -1,3 +1,5 @@
+#ifndef VIEWPOINT_HPP
+#define VIEWPOINT_HPP
 
 class Viewpoint
 {
@@ -27,3 +29,5 @@ private:
     double posY;
     double towards; // 0-360
 };
+
+#endif

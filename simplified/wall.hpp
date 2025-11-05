@@ -1,3 +1,5 @@
+#ifndef WALL_HPP
+#define WALL_HPP
 
 class Wall
 {
@@ -14,3 +16,5 @@ private:
     double x1, y1, x2, y2;
 
 };
+
+#endif

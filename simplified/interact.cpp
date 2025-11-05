@@ -1,72 +1,8 @@
 #include "space.hpp"
+#include "utils.hpp"
 #include <chrono>
 #include <thread>
 #include <iostream>
-
-#ifdef _WIN32
-    #include <conio.h>
-#else
-    #include <termios.h>
-    #include <unistd.h>
-
-    char getch() {
-        char buf = 0;
-        struct termios old = {0};
-        if (tcgetattr(0, &old) < 0)
-            perror("tcsetattr()");
-        old.c_lflag &= ~ICANON;
-        old.c_lflag &= ~ECHO;
-        old.c_cc[VMIN] = 1;
-        old.c_cc[VTIME] = 0;
-        if (tcsetattr(0, TCSANOW, &old) < 0)
-            perror("tcsetattr ICANON");
-        if (read(0, &buf, 1) < 0)
-            perror("read()");
-        old.c_lflag |= ICANON;
-        old.c_lflag |= ECHO;
-        if (tcsetattr(0, TCSADRAIN, &old) < 0)
-            perror("tcsetattr ~ICANON");
-        return buf;
-    }
-#endif
-
-// Check if a position would collide with any wall
-bool checkCollision(const Space& space, double newX, double newY, double collisionRadius = 0.1)
-{
-    // Cast rays in multiple directions around the player
-    const int numRays = 8;  // Check 8 directions
-    for (int i = 0; i < numRays; ++i) {
-        double angle = (360.0 / numRays) * i;
-        
-        // Calculate ray endpoint
-        double rayEndX = newX + collisionRadius * std::cos(angle * M_PI / 180.0);
-        double rayEndY = newY + collisionRadius * std::sin(angle * M_PI / 180.0);
-        
-        // Check if ray from center to edge point hits any wall
-        Viewpoint tempViewpoint(0, 0, 0, newX, newY, 0.0);
-        Space tempSpace(&tempViewpoint);
-        
-        // We need to check the distance to walls
-        // Use the space's castRay method by temporarily updating viewpoint
-        Viewpoint* originalVp = space.getViewpoint();
-        double origX = originalVp->getPosX();
-        double origY = originalVp->getPosY();
-        
-        originalVp->setPosX(newX);
-        originalVp->setPosY(newY);
-        
-        Space::RayResult result = space.castRay(angle);
-        
-        // Restore original position
-        originalVp->setPosX(origX);
-        originalVp->setPosY(origY);
-        
-        if (result.hit && result.distance < collisionRadius) {
-            return true;  // Collision detected
-        }
-    }
-    return false;  // No collision
-}
 
 int main()
 {
@@ -74,84 +10,45 @@ int main()
     Space space(&viewpoint);
 
     const double deg2rad = M_PI / 180.0;
-    space.addWall(Wall(4.0, -2, 4.0, 2));
-    space.addWall(Wall(4.0, -2, -4.0, -2));
-    space.addWall(Wall(4.0, 2, -8.0, 2));
-    space.addWall(Wall(-8, 2, -8, -6));
-    space.addWall(Wall(-8, -6, 4, -6));
+
+    space.addWall(Wall(-20, -20, 20, -20));    // 下
+    space.addWall(Wall(20, -20, 20, 16));      // 右（留出口）
+    space.addWall(Wall(20, 20, -20, 20));      // 上
+    space.addWall(Wall(-20, 20, -20, -20));    // 左
+    space.addWall(Wall(-18, -18, -12, -12));   // 45° 斜墙
+    space.addWall(Wall(-12, -12, -12, -6));    // 竖墙
+    space.addWall(Wall(-12, -6, -18, 0));      // 斜墙
+    space.addWall(Wall(-18, 0, -15, 3));       // 斜墙
+    space.addWall(Wall(-18, 5, -8, 15));       // 左上斜墙
+    space.addWall(Wall(-18, 15, -8, 5));       // 左下斜墙（交叉）
+    space.addWall(Wall(-15, 8, -15, 12));      // 中间竖墙
+    space.addWall(Wall(-8, -18, 0, -10));      // 右上斜
+    space.addWall(Wall(0, -10, -5, -5));       // 左上斜
+    space.addWall(Wall(3, 3, -2, 8));          // 左上斜
+    space.addWall(Wall(8, -18, 15, -8));       // 斜墙1
+    space.addWall(Wall(10, -16, 17, -6));      // 斜墙2（平行）
+    space.addWall(Wall(12, -14, 12, -8));      // 连接墙
+    space.addWall(Wall(12, -8, 18, -2));       // 延伸斜墙
+    space.addWall(Wall(8, 5, 12, -3));         // 左斜墙
+    space.addWall(Wall(16, 5, 12, -3));        // 右斜墙（V字）
+    space.addWall(Wall(12, -3, 12, -8));       // 底部竖墙
+    space.addWall(Wall(-15, 18, -10, 13));     // 左斜1
+    space.addWall(Wall(-10, 13, -5, 18));      // 左斜2
+    space.addWall(Wall(-5, 18, 0, 13));        // 中斜1
+    space.addWall(Wall(0, 13, 5, 18));         // 中斜2
+    space.addWall(Wall(5, 18, 5, 13));         // 竖墙
+    space.addWall(Wall(8, 8, 14, 14));         // 斜墙1
+    space.addWall(Wall(10, 10, 10, 16));       // 竖墙
+    space.addWall(Wall(10, 16, 15, 16));       // 横墙
+    space.addWall(Wall(15, 10, 18, 13));       // 最后斜墙
+    space.addWall(Wall(-6, -12, 2, -8));       // 下方斜墙
+    space.addWall(Wall(2, -8, 6, -12));        // 下方斜墙2
+    space.addWall(Wall(-10, 5, -5, 0));        // 左侧斜墙
+    space.addWall(Wall(6, 2, 10, 6));          // 右侧斜墙       
 
     space.render();
 
-    char command;
-    double stepLength = 0.1;
-    double rotateAngle = 2.0;
+    runInteractionLoop(space, 0.1, 2.0, true);
     
-    std::cout << "Use WASD to move, QE to rotate. Press ESC to quit." << std::endl;
-    
-    while(true)
-    {
-        #ifdef _WIN32
-            command = _getch();
-        #else
-            command = getch();
-        #endif
-        switch (command)
-        {
-        case 'a':
-            {
-                double newX = viewpoint.getPosX() - stepLength * std::sin(viewpoint.getTowards() * deg2rad);
-                double newY = viewpoint.getPosY() + stepLength * std::cos(viewpoint.getTowards() * deg2rad);
-                if (!checkCollision(space, newX, newY)) {
-                    viewpoint.setPosX(newX);
-                    viewpoint.setPosY(newY);
-                }
-            }
-            break;
-        case 'd':
-            {
-                double newX = viewpoint.getPosX() + stepLength * std::sin(viewpoint.getTowards() * deg2rad);
-                double newY = viewpoint.getPosY() - stepLength * std::cos(viewpoint.getTowards() * deg2rad);
-                if (!checkCollision(space, newX, newY)) {
-                    viewpoint.setPosX(newX);
-                    viewpoint.setPosY(newY);
-                }
-            break;
-            }
-        case 'w':
-            {
-                double newX = viewpoint.getPosX() + stepLength * std::cos(viewpoint.getTowards() * deg2rad);
-                double newY = viewpoint.getPosY() + stepLength * std::sin(viewpoint.getTowards() * deg2rad);
-                if (!checkCollision(space, newX, newY)) {
-                    viewpoint.setPosX(newX);
-                    viewpoint.setPosY(newY);
-                }
-            }
-            break;
-        case 's':
-            {
-                double newX = viewpoint.getPosX() - stepLength * std::cos(viewpoint.getTowards() * deg2rad);
-                double newY = viewpoint.getPosY() - stepLength * std::sin(viewpoint.getTowards() * deg2rad);
-                if (!checkCollision(space, newX, newY)) {
-                    viewpoint.setPosX(newX);
-                    viewpoint.setPosY(newY);
-                }
-            }
-            break;
-        case 'q':
-            viewpoint.setTowards(viewpoint.getTowards() + rotateAngle);
-            break;
-        case 'e':
-            viewpoint.setTowards(viewpoint.getTowards() - rotateAngle);
-            break;
-        case 27:  // ESC
-            std::cout << "Exiting..." << std::endl;
-            return 0;
-        default:
-            continue;
-        }
-        std::cout << "\033[2J\033[H" << std::flush;
-        space.render();
-        std::cout << "Position: (" << viewpoint.getPosX() << ", " << viewpoint.getPosY() << ") Towards: " << int(viewpoint.getTowards()) % 360 << std::endl;
-    }
-
+    return 0;
 }
