@@ -8,13 +8,65 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 class Space
 {
 public:
-    Space() : viewpoint(nullptr) {}
-    Space(Viewpoint* vp) : viewpoint(vp) {}
-    ~Space() {}
+    Space() : viewpoint(new Viewpoint()), ownsViewpoint(true) 
+    {
+        viewpoint->setViewAngle(60);
+        viewpoint->setViewLineCount(300);
+        viewpoint->setScreenHeight(100);
+        viewpoint->setPosX(0.0);
+        viewpoint->setPosY(0.0);
+        viewpoint->setTowards(0.0);
+    }
+
+    Space(const std::string& filename) : viewpoint(new Viewpoint()), ownsViewpoint(true)
+    {
+        
+        std::ifstream ifs(filename);
+        if (!ifs) {
+            std::cerr << "Error opening file for reading: " << filename << std::endl;
+            return;
+        }
+
+        walls.clear();
+        std::string line;
+        while (std::getline(ifs, line)) {
+            std::istringstream iss(line);
+            std::string type;
+            iss >> type;
+            if (type == "Viewpoint") {
+                double angle;
+                int lineCount, screenHeight;
+                double posX, posY, towards;
+                iss >> angle >> lineCount >> screenHeight >> posX >> posY >> towards;
+                viewpoint->setViewAngle(angle);
+                viewpoint->setViewLineCount(lineCount);
+                viewpoint->setScreenHeight(screenHeight);
+                viewpoint->setPosX(posX);
+                viewpoint->setPosY(posY);
+                viewpoint->setTowards(towards);
+            } else if (type == "Wall") {
+                double x1, y1, x2, y2;
+                iss >> x1 >> y1 >> x2 >> y2;
+                walls.emplace_back(x1, y1, x2, y2);
+            }
+        }
+        ifs.close();
+    }
+
+    Space(Viewpoint* vp) : viewpoint(vp), ownsViewpoint(false) {}
+
+    ~Space() {
+        if (ownsViewpoint && viewpoint) {
+            delete viewpoint;
+            viewpoint = nullptr;
+        }
+    }
 
     struct RayResult {
         double distance;
@@ -116,6 +168,7 @@ public:
             
             double correctedDistance = rayResult.distance * std::cos(relativeAngle * degToRad);
             double viewHeight = atan(5.0 / correctedDistance) / viewpoint->getViewAngle() / degToRad * screenHeight;
+            // double viewHeight = atan(5.0 / rayResult.distance) / viewpoint->getViewAngle() / degToRad * screenHeight;
             
             double dx = rayResult.hitWall->getX2() - rayResult.hitWall->getX1();
             double dy = rayResult.hitWall->getY2() - rayResult.hitWall->getY1();
@@ -149,13 +202,38 @@ public:
         std::cout << std::flush;
     }
 
-    void addWall(const Wall& wall) {
+    void addWall(const Wall& wall) 
+    {
         walls.push_back(wall);
+    }
+
+    void saveToFile(const std::string& filename) const 
+    {
+        std::ofstream ofs(filename);
+        if (!ofs) {
+            std::cerr << "Error opening file for writing: " << filename << std::endl;
+            return;
+        }
+        
+        ofs << "Viewpoint " << viewpoint->getViewAngle()
+            << " " << viewpoint->getViewLineCount()
+            << " " << viewpoint->getScreenHeight()
+            << " " << viewpoint->getPosX() 
+            << " " << viewpoint->getPosY()
+            << " " << viewpoint->getTowards() << "\n";
+
+        for (const auto& wall : walls) 
+        {
+            ofs << "Wall " << wall.getX1() << " " << wall.getY1()
+                << " " << wall.getX2() << " " << wall.getY2() << "\n";
+        }
+        ofs.close();
     }
 
 private:
     Viewpoint* viewpoint;
     std::vector<Wall> walls;
+    bool ownsViewpoint;
 
 };
 

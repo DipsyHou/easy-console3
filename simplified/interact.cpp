@@ -52,5 +52,10 @@ int main()
 
     runInteractionLoop(space, 0.1, 2.0, true);
     
+    space.saveToFile("saves/save.space");
+
+    Space loadedSpace("saves/save.space");
+    runInteractionLoop(loadedSpace, 0.1, 2.0, true);
+
     return 0;
 }

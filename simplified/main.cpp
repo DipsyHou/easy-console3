@@ -5,7 +5,7 @@
 
 int main()
 {
-    Viewpoint viewpoint(120, 601, 128, -4, 0.0, 0.0);
+    Viewpoint viewpoint(90, 601, 128, -4, 0.0, 0.0);
     Space space(&viewpoint);
 
     // create multiple walls with different inclinations (angles in degrees)
@@ -35,7 +35,7 @@ int main()
     {
         space.getViewpoint()->setTowards(angle);
         space.render();
-        angle += 0.5;
+        angle += 0.1;
         
         rotateFrameCount++;
         

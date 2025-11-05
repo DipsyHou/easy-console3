@@ -42,7 +42,7 @@ inline void printChar(char c, int posX, int posY)
 #endif
 
 // Check collision with any wall
-inline bool checkCollision(const Space& space, double newX, double newY, double collisionRadius = 0.1)
+bool checkCollision(const Space& space, double newX, double newY, double collisionRadius = 0.1)
 {
     const int numRays = 8;
     for (int i = 0; i < numRays; ++i) {
@@ -68,7 +68,7 @@ inline bool checkCollision(const Space& space, double newX, double newY, double 
 }
 
 // Main interaction loop
-inline void runInteractionLoop(Space& space, double stepLength = 0.1, double rotateAngle = 2.0, bool enableCheckCollision = true)
+void runInteractionLoop(Space& space, double stepLength = 0.1, double rotateAngle = 2.0, bool enableCheckCollision = true)
 {
     const double deg2rad = M_PI / 180.0;
     Viewpoint* viewpoint = space.getViewpoint();
@@ -143,7 +143,7 @@ inline void runInteractionLoop(Space& space, double stepLength = 0.1, double rot
         std::cout << "\033[2J\033[H" << std::flush;
         space.render();
         std::cout << "Position: (" << viewpoint->getPosX() << ", " << viewpoint->getPosY() 
-                  << ") Towards: " << int(viewpoint->getTowards()) % 360 << std::endl;
+                  << ") Towards: " << (int(viewpoint->getTowards()) % 360 + 360) % 360 << std::endl;
     }
 }
 
