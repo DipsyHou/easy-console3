@@ -20,7 +20,8 @@ inline void printChar(char c, int posX, int posY)
 
 // Get character without waiting for Enter (cross-platform)
 #ifndef _WIN32
-    inline char getch() {
+    inline char getch() 
+    {
         char buf = 0;
         struct termios old = {0};
         if (tcgetattr(0, &old) < 0)
@@ -144,6 +145,21 @@ void runInteractionLoop(Space& space, double stepLength = 0.1, double rotateAngl
         space.render();
         std::cout << "Position: (" << viewpoint->getPosX() << ", " << viewpoint->getPosY() 
                   << ") Towards: " << (int(viewpoint->getTowards()) % 360 + 360) % 360 << std::endl;
+    }
+}
+
+// Add arc-shaped wall
+void addArcWall(Space& space, double centerX, double centerY, double radius, double startAngle, double endAngle, int segments = 20)
+{
+    double angleStep = (endAngle - startAngle) / segments;
+    for (int i = 0; i < segments; ++i) {
+        double angle1 = startAngle + i * angleStep;
+        double angle2 = startAngle + (i + 1) * angleStep;
+        double x1 = centerX + radius * std::cos(angle1 * M_PI / 180.0);
+        double y1 = centerY + radius * std::sin(angle1 * M_PI / 180.0);
+        double x2 = centerX + radius * std::cos(angle2 * M_PI / 180.0);
+        double y2 = centerY + radius * std::sin(angle2 * M_PI / 180.0);
+        space.addWall(Wall(x1, y1, x2, y2));
     }
 }
 

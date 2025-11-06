@@ -24,6 +24,16 @@ public:
         viewpoint->setTowards(0.0);
     }
 
+    Space(double angle, int lineCount, int screenHeight, double posX, double posY, double towards) : viewpoint(new Viewpoint()), ownsViewpoint(true) 
+    {
+        viewpoint->setViewAngle(angle);
+        viewpoint->setViewLineCount(lineCount);
+        viewpoint->setScreenHeight(screenHeight);
+        viewpoint->setPosX(posX);
+        viewpoint->setPosY(posY);
+        viewpoint->setTowards(towards);
+    }
+
     Space(const std::string& filename) : viewpoint(new Viewpoint()), ownsViewpoint(true)
     {
         
@@ -61,14 +71,16 @@ public:
 
     Space(Viewpoint* vp) : viewpoint(vp), ownsViewpoint(false) {}
 
-    ~Space() {
+    ~Space() 
+    {
         if (ownsViewpoint && viewpoint) {
             delete viewpoint;
             viewpoint = nullptr;
         }
     }
 
-    struct RayResult {
+    struct RayResult
+    {
         double distance;
         bool hit;
         const Wall* hitWall;
@@ -175,7 +187,7 @@ public:
             double wallAngle = std::atan2(dy, dx); // -pi..pi
             double brightness = std::abs(std::cos(wallAngle)); // 0..1
 
-            const std::string shades = ":-=+*#%@";
+            const std::string shades = ":-+=*%#@";
             int shadeIdx = std::min<int>(static_cast<int>(brightness * (shades.size() - 1) + 0.5), (int)shades.size() - 1);
             char wallChar = shades[shadeIdx];
             
@@ -205,6 +217,21 @@ public:
     void addWall(const Wall& wall) 
     {
         walls.push_back(wall);
+    }
+
+    void deleteWall(double startX, double startY, double endX, double endY)
+    {
+        walls.erase(
+            std::remove_if(
+                walls.begin(),
+                walls.end(),
+                [startX, startY, endX, endY](const Wall& wall) 
+                {
+                    return wall.getX1() == startX && wall.getY1() == startY && wall.getX2() == endX && wall.getY2() == endY;
+                }
+            ),
+            walls.end()
+        );
     }
 
     void saveToFile(const std::string& filename) const 
